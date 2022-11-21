@@ -1,0 +1,59 @@
+services:
+  rabbitmq:
+    image: rabbitmq:3.10
+    ports:
+      - "5672:5672"
+  payment_service:
+    build:
+      context: ./payment_service
+      dockerfile: Dockerfile
+    ports:
+      - "8002:8002"
+    environment:
+      - MONGODB_URI=mongodb://mongo:27017/payment
+      - PORT=8002
+      - RABBIT_MQ_URL=amqp://rabbitmq:5672
+      - PAYMENT_QUEUE=payment
+    restart: on-failure
+    depends_on:
+      - mongo
+      - rabbitmq
+  product_service:
+    build:
+      context: ./product_service
+      dockerfile: Dockerfile
+    ports:
+      - "8005:8005"
+    environment:
+      - MONGODB_URI=mongodb://mongo:27017/product
+      - PORT=8005
+  order_service:
+    build:
+      context: ./order_service
+      dockerfile: Dockerfile
+    ports:
+      - "8004:8004"
+    environment:
+      - MONGODB_URI=mongodb://mongo:27017/order
+      - PORT=8004
+      - PAYMENT_SERVICE_URL=http://localhost:8002/payment
+  customer_service:
+    build:
+      context: ./customer_service
+      dockerfile: Dockerfile
+    ports:
+      - "8003:8003"
+    environment:
+      - MONGODB_URI=mongodb://mongo:27017/customer
+      - PORT=8003
+    depends_on:
+      - mongo
+  mongo:
+    volumes:
+      - mongodb_db:/data/db
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+volumes:
+  mongodb_db:
+      
